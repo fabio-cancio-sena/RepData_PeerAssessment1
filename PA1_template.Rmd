@@ -8,18 +8,50 @@ output:
 
 ## Loading and preprocessing the data
 
+```{r echo=TRUE}
+  library(lattice)
+  unzip(zipfile = "activity.zip")
+  ds <- read.csv("activity.csv")
+  ds$date <- as.Date(ds$date,"%Y-%m-%d")
+  steps_per_day <- aggregate(steps ~ date, data = ds, sum ,na.rm = TRUE)
+  steps_per_interval <- aggregate(steps ~ interval, data = ds, mean, na.rm = TRUE)
+  missing <- !complete.cases(ds)
+```
 
+```{r echo=TRUE}
+  hist(steps_per_day$steps)
+```
 
 ## What is mean total number of steps taken per day?
 
-
+```{r echo=TRUE}
+  summary(steps_per_day$steps)
+```
 
 ## What is the average daily activity pattern?
 
-
+```{r echo=TRUE}
+  plot(steps~interval,data=steps_per_interval,type="l")
+```
 
 ## Imputing missing values
 
-
+```{r echo=TRUE}
+  sum(missing == TRUE)
+  ds2 <- ds[missing == TRUE,]
+  ds2[,1] <- steps_per_interval$step
+  ds_filled_na <- rbind(ds[complete.cases(ds),], ds2)
+  steps_per_day2 <- aggregate(steps ~ date, data = ds_filled_na, sum)
+  hist(steps_per_day2$steps)
+  summary(steps_per_day2$steps)
+```
 
 ## Are there differences in activity patterns between weekdays and weekends?
+
+```{r echo=TRUE}
+  daynumber <- as.POSIXlt(ds_filled_na$date)$wday
+  ds_filled_na$weekdays <- ifelse(daynumber %in% c(0,6), "Weekend", "Weekday")
+  steps_per_week <- aggregate(ds_filled_na$steps, by=list(ds_filled_na$interval,ds_filled_na$weekdays),mean)
+  names(steps_per_week) <- c("interval","weekdays","steps")
+  xyplot(steps ~ interval | weekdays, steps_per_week, type="l",layout=c(1,2), xlab="Interval", ylab = "Number of steps", main="Activity Patterns on Weekends and Weekdays", col = "steelblue")
+```
